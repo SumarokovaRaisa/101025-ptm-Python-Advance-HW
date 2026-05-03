@@ -1,22 +1,25 @@
 from flask import Flask
+from flask_migrate import Migrate
 
 from app.routers.questions import questions_bp
 from app.routers.responses import responses_bp
+from app.routers.categories import categories_bp
+
 from app.config import DevelopmentConfig
-from app.extensions import db, migrate
-from flask_migrate import Migrate
-import app.models
+from app.extensions import db
+
+migrate = Migrate()
 
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
-    app.register_blueprint(questions_bp, url_prefix='/questions')
-    app.register_blueprint(responses_bp, url_prefix='/responses')
-    migrate = Migrate()  # new
-    migrate.init_app(app, db)  # new
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db)  # new
+
+    app.register_blueprint(questions_bp, url_prefix='/questions')
+    app.register_blueprint(responses_bp, url_prefix='/responses')
+    app.register_blueprint(categories_bp, url_prefix='/categories')
 
     return app

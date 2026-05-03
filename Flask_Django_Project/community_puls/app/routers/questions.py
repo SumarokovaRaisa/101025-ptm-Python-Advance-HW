@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.models import db, Question
+from app.models import db, Question, Category
 
 questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 
@@ -7,14 +7,20 @@ questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 @questions_bp.route('/', methods=['GET'])
 def get_questions():
     """Получение списка всех вопросов."""
+    questions = Question.query.all()
 
-    # questions = Question.query.all()
+    questions_data = []
+    for q in questions:
+        questions_data.append({
+            "id": q.id,
+            "text": q.text,
+            "category": {
+                "id": q.category.id,
+                "name": q.category.name
+            } if q.category else None
+        })
 
-    # questions = db.session.query(Question).all()
-
-
-    # questions_data = [{"id": q.id, "text": q.text} for q in questions]
-    # return jsonify(questions_data)
+    return jsonify(questions_data), 200
     return "Вопрос получен"
 
 
@@ -25,8 +31,35 @@ def create_question():
     """Создание нового вопроса."""
     data = request.get_json()
 
-    if not data or not data.get("text"):
-        return  jsonify({"message": "Вопрос создан", })
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    text = data.get("text")
+    category_id = data.get("category_id")
+
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+
+    if not category_id:
+        return jsonify({"error": "category_id is required"}), 400
+
+    category = Category.query.get(category_id)
+    if not category:
+        return jsonify({"error": "Category not found"}), 404
+
+    question = Question(text=text, category_id=category_id)
+
+    db.session.add(question)
+    db.session.commit()
+
+    return jsonify({
+        "id": question.id,
+        "text": question.text,
+        "category": {
+            "id": category.id,
+            "name": category.name
+        }
+    }), 201
 
     return "Вопрос создан"
 
